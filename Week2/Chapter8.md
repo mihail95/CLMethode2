@@ -53,8 +53,8 @@ Given an HMM $\lambda = (A,B)$ and a sequence of observations $O = o_1, o_2, ...
 
 #### Specification:
 Feature Function: $F = f(y_{i-1}, y_i, X, i)$, where:\
-$y_i =$ current token\
-$y_{i-1} =$ previous token\
+$y_i =$ current tag (state)\
+$y_{i-1} =$ previous tag (state)\
 $X =$ entire input sequence\
 $i =$ current index in the sequence\
 $w_k =$ weight for the k-th Feature Function
