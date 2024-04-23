@@ -42,4 +42,24 @@ Given an HMM $\lambda = (A,B)$ and a sequence of observations $O = o_1, o_2, ...
 
 ## Conditional Random Fields
 
+* Specific HMM - HMM with extra spice
+
+**HMM Drawbacks:**
+* Static Transition Probabilities - Location in sequence does not matter (verbs in german have 2nd position)
+
+* Limited Dependencies (Markov Assumption) - z.B Perfekt in Deutsch - "Ich bin ..... gegangen."
+
+<ins>*Linear Chain CRFs*</ins> - useful for performance, but using the Markov Assumption
+
+#### Specification:
+Feature Function: $F = f(y_{i-1}, y_i, X, i)$, where:\
+$y_i =$ current token\
+$y_{i-1} =$ previous token\
+$X =$ entire input sequence\
+$i =$ current index in the sequence\
+$w_k =$ weight for the k-th Feature Function
+
+$$F_k(X,Y) = \sum_{i=1}f_k(y_{i-1}, y_i, X, i)$$
+$$CRF(X,Y) = \sum_{j=1}w_k * F_k(X,Y)$$
+
 
