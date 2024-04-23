@@ -13,7 +13,7 @@ Initial probability distribution: $\pi = \pi_1,\pi_2,...,\pi_N$
 
 #### Figure 8.8a:
 8.4 - hot hot hot hot = 0.1 * 0.6 * 0.6 * 0.6 = 0.0216\
-8.5 - cold hot cold hot = 0.7 * 0.1 * 0.1 * 0.1 = 0.0007\
+8.5 - cold hot cold hot = 0.7 * 0.1 * 0.1 * 0.1 = 0.0007
 
 ### Hidden Markov Model
 
