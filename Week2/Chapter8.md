@@ -13,7 +13,7 @@ Initial probability distribution: $\pi = \pi_1,\pi_2,...,\pi_N$
 
 #### Figure 8.8a:
 8.4 - hot hot hot hot = 0.1 * 0.6 * 0.6 * 0.6 = 0.0216\
-8.5 - cold hot cold hot = 0.7 * 0.1 * 0.1 * 0.1 = 0.0007\
+8.5 - cold hot cold hot = 0.7 * 0.1 * 0.1 * 0.1 = 0.0007
 
 ### Hidden Markov Model
 
@@ -41,5 +41,25 @@ Given an HMM $\lambda = (A,B)$ and a sequence of observations $O = o_1, o_2, ...
 3. Calculate best path backwards
 
 ## Conditional Random Fields
+
+* Specific HMM - HMM with extra spice
+
+**HMM Drawbacks:**
+* Static Transition Probabilities - Location in sequence does not matter (verbs in german have 2nd position)
+
+* Limited Dependencies (Markov Assumption) - z.B Perfekt in Deutsch - "Ich bin ..... gegangen."
+
+<ins>*Linear Chain CRFs*</ins> - useful for performance, but using the Markov Assumption
+
+#### Specification:
+Feature Function: $F = f(y_{i-1}, y_i, X, i)$, where:\
+$y_i =$ current tag (state)\
+$y_{i-1} =$ previous tag (state)\
+$X =$ entire input sequence\
+$i =$ current index in the sequence\
+$w_k =$ weight for the k-th Feature Function
+
+$$F_k(X,Y) = \sum_{i=1}f_k(y_{i-1}, y_i, X, i)$$
+$$CRF(X,Y) = \sum_{j=1}w_k * F_k(X,Y)$$
 
 
