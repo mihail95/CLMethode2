@@ -27,7 +27,7 @@ from tensorflow.keras.preprocessing import sequence
 tf.keras.utils.set_random_seed(123)
 
 # read data via pandas
-data = pd.read_csv("movie_reviews_imdb/movie_reviews_10k.csv", sep=",")
+data = pd.read_csv("movie_reviews_imdb/movie_reviews_10k.csv", sep=",", na_filter=False)
 
 # look at the data
 print(data.head())
