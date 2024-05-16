@@ -156,17 +156,26 @@ if __name__ == "__main__":
   X_train, y_train, X_val, y_val, X_test, y_test = read_data()
   model = prepare_model(X_train)
 
+  # Define the earlystopping callback to prevent overfitting
+  earlystopping = callbacks.EarlyStopping(monitor="val_loss",
+                                        mode="min",
+                                        patience=5,
+                                        restore_best_weights=True)
+
   # train the model and save the training process ("history") for later inspection
-  history = model.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=3)
+  history = model.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=20, callbacks=[earlystopping])
   # get summary of the model
   print(model.summary())
 
   evaluate_model(history)
 
   """Notes:
-  1. Model für 3 Kategorien angepasst 
-	* nach 3 Epochs - accuracy: 0.8087 - loss: 0.4836 - val_accuracy: 0.6630 - val_loss: 0.8747
-		Test: Evaluation: [0.7467821836471558, 0.6749904155731201]; 
-				Accuracy: 0.6749904155731201
-		* Wie im 2 Kategorien beispiel - Validation Loss wird höher mit epochs (overfitting?)
-  """ 
+  2b.
+    2b.1. Erste Änderung - Epoch Anzahl (ohne die 2a. Anpassungen)
+    * 20 Epochs mit callbacks.EarlyStopping
+    * Nach 5 epochs (= patience Parameter) gestoppt:
+      accuracy: 0.9074 - loss: 0.2453 - val_accuracy: 0.6357 - val_loss: 1.2191
+      Evaluation: [0.7467821836471558, 0.6749904155731201]
+      Accuracy: 0.6749904155731201 (keine Verbesserung im Vergleich zum 1.)
+    * Wird besser in train set, schlechter in val und gleich in test
+  """

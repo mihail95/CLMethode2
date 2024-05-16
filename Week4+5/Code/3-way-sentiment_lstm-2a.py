@@ -164,9 +164,6 @@ if __name__ == "__main__":
   evaluate_model(history)
 
   """Notes:
-  1. Model für 3 Kategorien angepasst 
-	* nach 3 Epochs - accuracy: 0.8087 - loss: 0.4836 - val_accuracy: 0.6630 - val_loss: 0.8747
-		Test: Evaluation: [0.7467821836471558, 0.6749904155731201]; 
-				Accuracy: 0.6749904155731201
-		* Wie im 2 Kategorien beispiel - Validation Loss wird höher mit epochs (overfitting?)
+  2a.
+    2a.1. 
   """ 
