@@ -45,6 +45,8 @@ Denken Sie daran, einen random seed zu setzen, um reproduzierbare Ergebnisse zu 
 """
 import pandas as pd
 import matplotlib.pyplot as plt
+import re
+import string
 
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
@@ -54,6 +56,7 @@ from tensorflow.keras.layers import Embedding
 from tensorflow.keras.preprocessing import sequence
 from tensorflow.keras.utils import to_categorical
 from keras import callbacks
+from keras import regularizers
 
 def read_data():
   """Reads training, validation and test data from 3 separate .csv files, containing reviews and integer labels"""
@@ -74,11 +77,35 @@ def read_data():
   
   return X_train, y_train, X_val, y_val, X_test, y_test
 
+def custom_standardization(input_data):
+  """Standardization method from https://www.tensorflow.org/tutorials/keras/text_classification with a few changes
+    * Added URL removal
+  """
+
+  lowercase = tf.strings.lower(input_data)
+  removed_urls = tf.strings.regex_replace(lowercase, r"(https|http|www)[://]*[a-zA-Z0-9;,/?:@&=+$\-_.!~*'()]+", ' ')
+  stripped_html = tf.strings.regex_replace(removed_urls, '<br />', ' ')
+  removed_punctuation = tf.strings.regex_replace(stripped_html,
+                          '[%s]' % re.escape(string.punctuation),
+                          '')
+  
+  return removed_punctuation
+
 def prepare_model(X_train):
   """Configure the keras model and return it"""
 
+  # Constraints
+  MAX_FEATURES = 10000
+  SEQUENCE_LEN = 100
+
   # define vectorization layer with default values:
-  vectorization_layer = tf.keras.layers.TextVectorization()
+  vectorization_layer = tf.keras.layers.TextVectorization(
+    standardize= custom_standardization,
+    max_tokens= MAX_FEATURES,
+    output_mode= "int",
+    ngrams= 2,
+    output_sequence_length= SEQUENCE_LEN
+  )
 
   # adapt vectorization to training data
   vectorization_layer.adapt(X_train)
@@ -95,23 +122,24 @@ def prepare_model(X_train):
     dtype=tf.string)) 
 
   # Vectorization layer: https://keras.io/api/layers/preprocessing_layers/text/text_vectorization/
-  model.add(vectorization_layer) 
+  model.add(vectorization_layer)
 
   # Embedding Layer: https://keras.io/api/layers/core_layers/embedding/
   # "This layer can only be used on positive integer inputs of a fixed range."
   model.add(Embedding(
-    input_dim=len(vectorization_layer.get_vocabulary()), 
-    output_dim=embedding_vector_length,
-    mask_zero=True)) 
+    input_dim= len(vectorization_layer.get_vocabulary()), 
+    output_dim= embedding_vector_length,
+    mask_zero= True)) 
 
   # LSTM Layer:
-  model.add(LSTM(units =100))
+  model.add(LSTM(units= 100, kernel_regularizer= regularizers.L2(l2=0.01)))
 
   # Feed-forward Layer
   model.add(Dense(3, activation='softmax'))
 
   # compile the model
-  model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+  optimizer = tf.keras.optimizers.Adam(learning_rate= 0.00001) # Default is 0.001
+  model.compile(loss='categorical_crossentropy', optimizer= optimizer, metrics=['accuracy'])
 
   return model
 
@@ -163,19 +191,8 @@ if __name__ == "__main__":
                                         restore_best_weights=True)
 
   # train the model and save the training process ("history") for later inspection
-  history = model.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=20, callbacks=[earlystopping])
+  history = model.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=200, callbacks=[earlystopping], batch_size= 5)
   # get summary of the model
   print(model.summary())
 
   evaluate_model(history)
-
-  """Notes:
-  2b.
-    2b.1. Erste Änderung - Epoch Anzahl (ohne die 2a. Anpassungen)
-    * 20 Epochs mit callbacks.EarlyStopping
-    * Nach 5 epochs (= patience Parameter) gestoppt:
-      accuracy: 0.9074 - loss: 0.2453 - val_accuracy: 0.6357 - val_loss: 1.2191
-      Evaluation: [0.7467821836471558, 0.6749904155731201]
-      Accuracy: 0.6749904155731201 (keine Verbesserung im Vergleich zum 1.)
-    * Wird besser in train set, schlechter in val und gleich in test
-  """
