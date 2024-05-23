@@ -132,13 +132,13 @@ def prepare_model(X_train):
     mask_zero= True)) 
 
   # LSTM Layer:
-  model.add(LSTM(units= 100, kernel_regularizer= regularizers.L2(l2=0.01)))
+  model.add(LSTM(units= 100, kernel_regularizer= regularizers.L2(l2=0.001)))
 
   # Feed-forward Layer
-  model.add(Dense(3, activation='softmax'))
+  model.add(Dense(3, activation='softmax', kernel_regularizer= regularizers.L2(l2=0.01)))
 
   # compile the model
-  optimizer = tf.keras.optimizers.Adam(learning_rate= 0.00001) # Default is 0.001
+  optimizer = tf.keras.optimizers.Adam(learning_rate= 1e-5) # Default is 0.001
   model.compile(loss='categorical_crossentropy', optimizer= optimizer, metrics=['accuracy'])
 
   return model
@@ -191,6 +191,7 @@ if __name__ == "__main__":
                                         restore_best_weights=True)
 
   # train the model and save the training process ("history") for later inspection
+  # history = model.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=200, callbacks=[earlystopping])
   history = model.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=200, callbacks=[earlystopping], batch_size= 5)
   # get summary of the model
   print(model.summary())
