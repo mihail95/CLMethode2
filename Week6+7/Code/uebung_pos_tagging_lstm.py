@@ -117,12 +117,13 @@ import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 from keras._tf_keras.keras.models import Sequential
-from keras._tf_keras.keras.layers import Dense
-from keras._tf_keras.keras.layers import LSTM
-from keras._tf_keras.keras.layers import Embedding
-from keras._tf_keras.keras.preprocessing import sequence
 from keras._tf_keras.keras.layers import StringLookup
 from keras._tf_keras.keras.preprocessing.sequence import pad_sequences
+# from keras._tf_keras.keras.layers import Dense
+# from keras._tf_keras.keras.layers import LSTM
+# from keras._tf_keras.keras.layers import Embedding
+# from keras._tf_keras.keras.preprocessing import sequence
+
 
 def read_pos_data(filename:str) -> dict:
   """Reads the .pos files and extracts the data
@@ -131,19 +132,78 @@ def read_pos_data(filename:str) -> dict:
   pos_data = {"text": [], "label":[]}
 
   with open(filename, encoding='utf-8') as file:
+    trainingPointTexts = []
+    trainingPointLabels = []
     for line in file:
-      print(line)
+      rowList = line.split("\t")
+      # Reset the texts and labels when we see a newline (only 1 member of the array)
+      if len(rowList) == 1:
+        pos_data["text"].append(trainingPointTexts)
+        pos_data["label"].append(trainingPointLabels)
+        trainingPointTexts = []
+        trainingPointLabels = []
+      else:
+        trainingPointTexts.append(rowList[0])
+        trainingPointLabels.append(rowList[1])
 
   return pos_data
 
 # Todo: Ihr Code um die Daten einzulesen und gemäß der Aufgabenstellung zu vektorisieren
+### Aufgabe 3
 train_data = read_pos_data("de_hdt-ud-train-a-1.pos")
-#valData = pd.read_csv("Sp1786-multiclass-sentiment-analysis-dataset/val_df.csv", sep=",", na_filter=False)
-#testData = pd.read_csv("Sp1786-multiclass-sentiment-analysis-dataset/test_df.csv", sep=",", na_filter=False)
+val_data = read_pos_data("de_hdt-ud-dev.pos")
+test_data = read_pos_data("de_hdt-ud-test.pos")
 
-# X_train, y_train = train_data["text"], train_data["label"]
-# #X_val, y_val = valData["text"], valData["label"]
-# #X_test, y_test = testData["text"], testData["label"]
+X_train, y_train = train_data["text"], train_data["label"]
+X_val, y_val = val_data["text"], val_data["label"]
+X_test, y_test = test_data["text"], test_data["label"]
+
+# Get the maximal sentence length out of all three datasets
+MAX_TOKENS = max(
+  len(max(train_data["text"], key=len)),
+  len(max(val_data["text"], key=len)),
+  len(max(test_data["text"], key=len))
+)
+
+# Pad the training data to the max token lenght
+X_train_padded = pad_sequences(
+  X_train, padding='post', maxlen=MAX_TOKENS, value='', dtype='U64'
+)
+
+# Setup the StringLookup layer
+lookup_layer = StringLookup(
+  oov_token='[UNK]',
+  output_mode='int',
+  mask_token=''
+)
+
+# Adapt the layer to the data
+lookup_layer.adapt(X_train_padded)
+vectorized_training_data = lookup_layer(X_train_padded)
+
+# print(vectorized_training_data[:2])
+
+### Aufgabe 4
+
+# Pad the training data to the max token lenght
+y_train_padded = pad_sequences(
+  y_train, padding='post', maxlen=MAX_TOKENS, value='', dtype='U64'
+)
+
+# Setup the StringLookup layer
+label_lookup_layer = StringLookup(
+  output_mode='int',
+  mask_token='',
+  num_oov_indices = 0
+)
+
+# Adapt the layer to the data
+label_lookup_layer.adapt(y_train_padded)
+vectorized_training_labels = label_lookup_layer(y_train_padded)
+label_vocabulary = label_lookup_layer.get_vocabulary()
+
+# print(vectorized_training_labels[:2])
+# print(label_vocabulary)
 
 # ##### Vorgegebener Code
 
