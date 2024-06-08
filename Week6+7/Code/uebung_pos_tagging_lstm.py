@@ -119,10 +119,9 @@ from tensorflow import keras
 from keras._tf_keras.keras.models import Sequential
 from keras._tf_keras.keras.layers import StringLookup
 from keras._tf_keras.keras.preprocessing.sequence import pad_sequences
-# from keras._tf_keras.keras.layers import Dense
-# from keras._tf_keras.keras.layers import LSTM
-# from keras._tf_keras.keras.layers import Embedding
-# from keras._tf_keras.keras.preprocessing import sequence
+from keras._tf_keras.keras.layers import Dense
+from keras._tf_keras.keras.layers import LSTM
+from keras._tf_keras.keras.layers import Embedding
 
 
 def read_pos_data(filename:str) -> dict:
@@ -179,6 +178,7 @@ lookup_layer = StringLookup(
 
 # Adapt the layer to the data
 lookup_layer.adapt(X_train_padded)
+X_vocabulary = lookup_layer.get_vocabulary()
 vectorized_training_data = lookup_layer(X_train_padded)
 
 # print(vectorized_training_data[:2])
@@ -205,27 +205,67 @@ label_vocabulary = label_lookup_layer.get_vocabulary()
 # print(vectorized_training_labels[:2])
 # print(label_vocabulary)
 
-# ##### Vorgegebener Code
+##### Vorgegebener Code
 
-# # Create the model
-# embedding_vector_length = 32
+# Create the model
+embedding_vector_length = 32
 
-# model = Sequential()
-# model.add(Embedding(
-#   input_dim="To Do: Größe des Vokabulars von X", 
-#   output_dim=embedding_vector_length))
-# model.add(LSTM(100, return_sequences=True))
-# model.add(tf.keras.layers.TimeDistributed(
-#   Dense("To Do: Größe des Vokabulars von y", activation='softmax'))) 
+model = Sequential()
 
-# model.compile(loss='sparse_categorical_crossentropy', optimizer='adam',  metrics="accuracy") 
+model.add(Embedding(
+  input_dim=len(X_vocabulary), 
+  output_dim=embedding_vector_length))
 
-# # Training
-# model.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=3, batch_size=64)
+model.add(LSTM(100, return_sequences=True))
 
-# # Evaluation
-# preds = model.predict(X_test)
+model.add(tf.keras.layers.TimeDistributed(
+  Dense(len(label_vocabulary), activation='softmax'))
+) 
 
-# ###### Ende vorgegebener Code
+model.compile(loss='sparse_categorical_crossentropy', optimizer='adam',  metrics=["accuracy"])
 
-# # Todo: Ihr Code, um die vorhergesagten POS-Tags zu ermitteln
+X_val_padded = pad_sequences(
+  X_val, padding='post', maxlen=MAX_TOKENS, value='', dtype='U64'
+)
+y_val_padded = pad_sequences(
+  y_val, padding='post', maxlen=MAX_TOKENS, value='', dtype='U64'
+)
+
+vectorized_val_data = lookup_layer(X_val_padded)
+vectorized_val_labels = label_lookup_layer(y_val_padded)
+
+X_test_padded = pad_sequences(
+  X_test, padding='post', maxlen=MAX_TOKENS, value='', dtype='U64'
+)
+vectorized_test_data = lookup_layer(X_test_padded)
+
+
+# Training
+model.fit(vectorized_training_data, vectorized_training_labels,
+  validation_data=(vectorized_val_data, vectorized_val_labels),
+  epochs=3, batch_size=64, verbose=1
+)
+
+# Evaluation
+preds = model.predict(vectorized_test_data)
+
+###### Ende vorgegebener Code
+### Aufgabe 5
+
+inverse_label_lookup = StringLookup(
+  vocabulary= label_vocabulary,
+  mask_token='',
+  num_oov_indices = 0,
+  invert= True
+)
+
+# Print out the 1st datapoint from the test-set:
+row_names = ["Wortform", "Vorhersage", "Gold Label"]
+print("{: <15} {: ^10} {: >5}".format(*row_names))
+
+for idx, token in enumerate(X_test[0]):
+  # This is a bit horrendous - get the index of the maximal value in the prediction,
+  # reverse the string lookup, turn the tensor into an array and cast it to a sting
+  pred_label = str(inverse_label_lookup(np.argmax(preds[0][idx])).numpy(), "utf-8")
+  gold_label = y_test[0][idx]
+  print("{: <15} {: ^10} {: >5}".format(token, pred_label, gold_label))
