@@ -1,7 +1,11 @@
+####
+# Authors: Vitaliia Ruban, Won Kim, Mihail Chifligarov
+####
+
 import pandas as pd
 import spacy
 from spacy.tokens import Doc
-from scipy.stats import pearsonr
+from scipy.stats import pearsonr, chisquare
 
 
 def count_konjunktiv(item: Doc) -> int:
@@ -14,7 +18,7 @@ def count_konjunktiv(item: Doc) -> int:
 
     return konj_count
 
-def count_weak_language(text: str) -> int:
+def count_weak_language(text) -> int:
     """Counts up the number of times a 'weak' word appears in the given text."""
     unschaerfeindikatoren = [
         "vielleicht", "möglicherweise", "wahrscheinlich", "eventuell", "ziemlich",
@@ -99,6 +103,50 @@ for i in mindset_df.index:
     tokens_mit_dep_tags.append(tokens_dep_tagging(item_doc))
 
 
+## Andrede überprüfen
+# Textspalte extrahieren
+text = mindset_df["BR01_01"]
+
+# Begrüßungsmuster definieren
+pattern_liebe = r'(L|l)iebe(r|s)*'
+pattern_sg = r'(S|s)ehr geehrte(r|s)*'
+pattern_hallo = r'(H|h)allo*'
+
+# Begrüßungsmuster mit Text abgleichen
+match_liebe = text.str.match(pattern_liebe)
+match_sg = text.str.match(pattern_sg)
+match_hallo = text.str.match(pattern_hallo)
+
+# Neue Spalte 'Gruss' initialisieren
+mindset_df["Gruss"] = ""
+
+# Begrüßungen zuweisen
+i = 0
+for element in match_liebe:
+    if element:
+        mindset_df.at[i, "Gruss"] = 2
+    i += 1
+
+i2 = 0
+for element in match_sg:
+    if element:
+        mindset_df.at[i2, "Gruss"] = 1
+    i2 += 1
+
+i3 = 0
+for element in match_hallo:
+    if element:
+        mindset_df.at[i3, "Gruss"] = 2
+    i3 += 1
+
+# Leere Einträge in 'Gruss' mit 0 setzen
+i4 = 0
+for row in mindset_df["Gruss"]:
+    if row == "":
+        mindset_df.at[i4, "Gruss"] = 0
+    i4 += 1
+
+
 print("------------------------ RESULTS ------------------------------------------------------------------")
 ########### UNSCHÄRFEINDIKATOREN #####################
 x = mindset_df["wahrg_Mindset"]
@@ -128,4 +176,19 @@ passiv_saetze_corr_test = pearsonr(mindset_df["wahrg_Mindset"], mindset_df["Anza
 # geringe negative korrelation
 print(f"Passivkonstruktionen Korrelation (Pearson's R): {passiv_saetze_corr_test.statistic} with p-value({passiv_saetze_corr_test.pvalue})\n")
 
-mindset_df.to_csv('mindset_analysis.csv')
+############# ANREDE ########################
+
+# 'wahrg_Mindset'- und 'Gruss'-Spalten in NumPy-Arrays konvertieren und ausgeben
+mindset_array = mindset_df["wahrg_Mindset"].to_numpy()
+# print("Mindset-Array:", mindset_array)
+
+gruss_array = mindset_df["Gruss"].to_numpy()
+# print("Gruss-Array:", gruss_array)
+
+#https://stackoverflow.com/questions/66194775/conduct-a-chi-square-test-to-check-the-values-independent-or-correlated
+# Chi-Quadrat-Statistik berechnen
+observed_freq = pd.crosstab(gruss_array, mindset_array)
+chi2_stat, p_value = chisquare(observed_freq.values.flatten())
+
+# Ergebnisse ausgeben
+print(f"Anrede Korrelation (Chi-Quadrat-Statistik): {chi2_stat} with p-value({p_value})\n")
